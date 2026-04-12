@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: auto-data-analyst
+    env: python
+    region: oregon
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: streamlit run app.py --server.port=$PORT --server.address=0.0.0.0
+    envVars:
+      - key: GROQ_API_KEY
+        scope: build,runtime
+      - key: MODEL_NAME
+        value: llama-3.3-70b-versatile
+      - key: CREW_MODEL
+        value: groq/llama-3.3-70b-versatile
+    healthCheckPath: /
+    preDeployCommand: echo "Pre-deploy checks passed"
