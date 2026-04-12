@@ -1,0 +1,15 @@
+streamlit
+crewai
+crewai-tools
+langchain
+langchain-groq
+pandas
+numpy
+matplotlib
+seaborn
+scipy
+fpdf2
+python-dotenv
+openpyxl
+groq
+plotly
