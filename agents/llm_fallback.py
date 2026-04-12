@@ -2,7 +2,6 @@ import os
 import re
 from crewai import Agent, Task, Crew
 from dotenv import load_dotenv
-from langchain_groq import ChatGroq
 
 
 load_dotenv()
@@ -102,23 +101,18 @@ def kickoff_with_llm_fallback(
     load_dotenv()
     
     groq_api_key = os.getenv("GROQ_API_KEY", "").strip()
-    groq_model = os.getenv("MODEL_NAME", "llama-3.3-70b-versatile")
     
     if not groq_api_key:
         raise RuntimeError("GROQ_API_KEY is missing.")
     
-    # Create ChatGroq LLM instance
-    llm = ChatGroq(
-        model=groq_model,
-        api_key=groq_api_key,
-        temperature=0.3
-    )
+    # Use model string - LiteLLM will handle it via environment variables
+    model_string = "groq/llama-3.3-70b-versatile"
 
     primary_agent = Agent(
         role=role,
         goal=goal,
         backstory=backstory,
-        llm=llm,
+        llm=model_string,
         verbose=False,
     )
     primary_task = Task(
