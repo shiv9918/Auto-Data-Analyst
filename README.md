@@ -16,7 +16,9 @@
 
 <br/><br/>
 
-<img src="https://github-profile-trophy.vercel.app/?username=shiv9918&theme=algolia&no-frame=true&no-bg=true&margin-w=15&row=1&column=6" alt="Decorative trophy strip" />
+<img src="https://img.shields.io/badge/Status-Project%20Submission%20Ready-16a34a?style=for-the-badge" alt="Submission ready" />
+<img src="https://img.shields.io/badge/Architecture-Multi--Agent-0f766e?style=for-the-badge" alt="Multi agent architecture" />
+<img src="https://img.shields.io/badge/Output-Report%20%2B%20Insights-14532d?style=for-the-badge" alt="Report and insights" />
 
 </div>
 
