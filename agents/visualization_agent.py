@@ -1,3 +1,4 @@
+# This agent creates visualizations (charts and graphs) to show data patterns
 import pandas as pd
 from tools.chart_generator import (
     plot_histogram, plot_bar,
@@ -9,20 +10,24 @@ from agents.llm_fallback import kickoff_with_llm_fallback, is_rate_limit_error, 
 
 load_dotenv()
 
+
+# Main function that generates different types of charts
 def run_visualization_agent(df: pd.DataFrame) -> dict:
+    # Store all generated chart file paths
     chart_paths = []
 
-    # Generate all chart types
-    chart_paths += plot_histogram(df)
-    chart_paths += plot_bar(df)
-    chart_paths += plot_boxplot(df)
-    chart_paths += plot_line(df)
+    # Generate different chart types
+    chart_paths += plot_histogram(df)  # Show data distribution
+    chart_paths += plot_bar(df)  # Show category counts
+    chart_paths += plot_boxplot(df)  # Show outliers and quartiles
+    chart_paths += plot_line(df)  # Show trends over time
 
+    # Generate correlation heatmap showing relationships between numbers
     heatmap = plot_correlation_heatmap(df)
     if heatmap:
         chart_paths.append(heatmap)
 
-    # Ask LLM which charts are most important
+    # Prepare prompt for AI to explain the visualizations
     prompt = f"""
     You are a data visualization expert.
     The following charts were generated for a dataset with columns: {list(df.columns)}
@@ -34,6 +39,7 @@ def run_visualization_agent(df: pd.DataFrame) -> dict:
     - Any visualization recommendations
     """
 
+    # Use CrewAI to generate AI explanation of charts (see llm_fallback.py for agent setup)
     try:
         viz_summary, _ = kickoff_with_llm_fallback(
             role="Visualization Expert",
@@ -48,6 +54,7 @@ def run_visualization_agent(df: pd.DataFrame) -> dict:
         else:
             raise
 
+    # Return chart files and AI explanation
     return {
         "chart_paths": chart_paths,
         "viz_summary": viz_summary

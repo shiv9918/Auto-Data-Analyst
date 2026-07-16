@@ -1,3 +1,4 @@
+# This agent cleans raw data by removing duplicates, converting data types, and filling missing values
 import pandas as pd
 import numpy as np
 from tools.pandas_tools import load_file, get_basic_info
@@ -8,19 +9,20 @@ from agents.llm_fallback import kickoff_with_llm_fallback, is_rate_limit_error, 
 load_dotenv()
 
 
-
+# Main function that cleans data and generates a report
 def run_cleaning_agent(filepath: str) -> tuple[pd.DataFrame, str]:
+    # Load the file and get initial information
     df = load_file(filepath)
     info = get_basic_info(df)
     report_lines = []
 
-    # 1. Remove duplicates
+    # Remove duplicate rows from data
     before = len(df)
     df.drop_duplicates(inplace=True)
     removed = before - len(df)
     report_lines.append(f"Removed {removed} duplicate rows.")
 
-    # 2. Fix data types — try parsing date columns
+    # Convert columns with 'date' or 'time' in their name to datetime format
     for col in df.columns:
         if "date" in col.lower() or "time" in col.lower():
             try:
@@ -29,7 +31,7 @@ def run_cleaning_agent(filepath: str) -> tuple[pd.DataFrame, str]:
             except:
                 pass
 
-    # 3. Handle missing values
+    # Fill missing values: use median for numbers, mode for text
     for col in df.columns:
         missing = df[col].isnull().sum()
         if missing == 0:
@@ -41,17 +43,18 @@ def run_cleaning_agent(filepath: str) -> tuple[pd.DataFrame, str]:
             df[col].fillna(df[col].mode()[0] if not df[col].mode().empty else "Unknown", inplace=True)
             report_lines.append(f"Filled {missing} missing values in '{col}' with mode.")
 
-    # 4. Normalize column names
+    # Standardize column names to lowercase with underscores
     df.columns = [c.strip().lower().replace(" ", "_") for c in df.columns]
     report_lines.append("Normalized all column names to snake_case.")
 
-    # 5. Use LLM to summarize cleaning
+    # Ask AI to write a summary of what was cleaned
     cleaning_summary_prompt = f"""
     You are a data cleaning expert. Here is what was done to clean the dataset:
     {chr(10).join(report_lines)}
     Original info: {info}
     Write a short professional summary (5-7 sentences) of what was cleaned and why it matters.
     """
+    # Use CrewAI to generate AI summary (see llm_fallback.py for agent setup)
     try:
         ai_summary, _ = kickoff_with_llm_fallback(
             role="Data Cleaning Specialist",
@@ -66,5 +69,6 @@ def run_cleaning_agent(filepath: str) -> tuple[pd.DataFrame, str]:
         else:
             raise
 
+    # Combine cleaning report with AI summary
     clean_report = "\n".join(report_lines) + "\n\nAI Summary:\n" + ai_summary
     return df, clean_report

@@ -1,3 +1,4 @@
+# This agent converts data analysis into business insights and recommendations
 import pandas as pd
 from dotenv import load_dotenv
 import os
@@ -6,13 +7,16 @@ from agents.llm_fallback import kickoff_with_llm_fallback, is_rate_limit_error, 
 
 load_dotenv()
 
+# Main function that generates business insights from data analysis
 def run_insight_agent(df: pd.DataFrame, eda_results: dict) -> str:
+    # Prepare data samples and statistics for AI analysis
     sample = df.head(5).to_string()
     columns = list(df.columns)
     stats = json.dumps(eda_results.get("stats", {}).get("describe", {}), indent=2)
     outliers = json.dumps(eda_results.get("outliers", {}), indent=2)
     eda_summary = eda_results.get("eda_summary", "")
 
+    # Prepare prompt for AI to generate business insights
     prompt = f"""
     You are a senior business analyst. Based on the dataset analysis below, generate 7-10 actionable business insights.
 
@@ -30,7 +34,7 @@ def run_insight_agent(df: pd.DataFrame, eda_results: dict) -> str:
 
     Generate insights in this format:
     1. [INSIGHT TITLE]: Detailed explanation with specific numbers/columns mentioned.
-    
+
     Focus on:
     - Revenue / sales patterns (if applicable)
     - Customer behavior patterns
@@ -43,6 +47,7 @@ def run_insight_agent(df: pd.DataFrame, eda_results: dict) -> str:
     Be specific. Use actual column names and numbers from the data.
     """
 
+    # Use CrewAI to generate AI insights (see llm_fallback.py for agent setup)
     try:
         result, _ = kickoff_with_llm_fallback(
             role="Business Insight Generator",

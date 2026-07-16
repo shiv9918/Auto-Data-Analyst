@@ -13,5 +13,5 @@ services:
         value: llama-3.3-70b-versatile
       - key: CREW_MODEL
         value: groq/llama-3.3-70b-versatile
-    healthCheckPath: /
+    healthCheckPath: /_stcore/health
     preDeployCommand: echo "Pre-deploy checks passed"

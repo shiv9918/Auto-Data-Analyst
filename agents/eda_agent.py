@@ -1,3 +1,4 @@
+# This agent performs Exploratory Data Analysis (EDA) - finding patterns, correlations, and outliers
 import pandas as pd
 from tools.pandas_tools import get_statistics, detect_outliers, get_correlation
 from dotenv import load_dotenv
@@ -8,12 +9,16 @@ from agents.llm_fallback import kickoff_with_llm_fallback, is_rate_limit_error, 
 load_dotenv()
 
 
-
+# Main function that analyzes data for patterns, correlations and anomalies
 def run_eda_agent(df: pd.DataFrame) -> dict:
+    # Calculate statistical measures for all numeric columns
     stats = get_statistics(df)
+    # Find values that are far from normal (outliers)
     outliers = detect_outliers(df)
+    # Find relationships between numeric columns
     correlation = get_correlation(df)
 
+    # Prepare prompt for AI to analyze the data findings
     prompt = f"""
     You are an expert data analyst. Analyze the following dataset statistics and provide key findings.
 
@@ -36,6 +41,7 @@ def run_eda_agent(df: pd.DataFrame) -> dict:
     Be specific and use the actual column names and numbers.
     """
 
+    # Use CrewAI to generate AI analysis (see llm_fallback.py for agent setup)
     try:
         eda_summary, _ = kickoff_with_llm_fallback(
             role="EDA Specialist",
@@ -50,6 +56,7 @@ def run_eda_agent(df: pd.DataFrame) -> dict:
         else:
             raise
 
+    # Return all analysis results together
     return {
         "stats": stats,
         "outliers": outliers,
