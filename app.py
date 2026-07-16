@@ -39,6 +39,14 @@ def load_dataframe(filepath: str) -> pd.DataFrame:
     return pd.read_csv(filepath) if filepath.endswith(".csv") else pd.read_excel(filepath)
 
 
+# Make dataframes safe for Streamlit's Arrow serialization without changing analysis inputs.
+def make_display_safe_df(df: pd.DataFrame) -> pd.DataFrame:
+    safe_df = df.copy()
+    for col in safe_df.select_dtypes(include=["object"]).columns:
+        safe_df[col] = safe_df[col].astype("string")
+    return safe_df
+
+
 # Display EDA (Exploratory Data Analysis) results
 def render_eda_tab(eda_results: dict) -> None:
     # Get the AI-generated summary text
@@ -58,7 +66,7 @@ def render_eda_tab(eda_results: dict) -> None:
         stats_df = pd.DataFrame(describe).T
         stats_df["skew"] = pd.Series(stats.get("skewness", {}))
         stats_df["kurtosis"] = pd.Series(stats.get("kurtosis", {}))
-        st.dataframe(stats_df.style.format("{:.3f}"), width="stretch")
+        st.dataframe(make_display_safe_df(stats_df).style.format("{:.3f}"), width="stretch")
 
     # Display outliers in a side-by-side layout
     col1, col2 = st.columns(2)
@@ -77,7 +85,7 @@ def render_eda_tab(eda_results: dict) -> None:
         if correlation and len(correlation) >= 2:
             corr_df = pd.DataFrame(correlation)
             st.dataframe(
-                corr_df.style.background_gradient(cmap="RdBu_r", vmin=-1, vmax=1).format("{:.2f}"),
+                make_display_safe_df(corr_df).style.background_gradient(cmap="RdBu_r", vmin=-1, vmax=1).format("{:.2f}"),
                 width="stretch",
             )
         else:
@@ -268,9 +276,9 @@ Rules:
         if isinstance(result, pd.Series):
             out_df = result.reset_index()
             out_df.columns = ["index", "value"]
-            st.dataframe(out_df, width="stretch")
+            st.dataframe(make_display_safe_df(out_df), width="stretch")
         elif isinstance(result, pd.DataFrame):
-            st.dataframe(result, width="stretch")
+            st.dataframe(make_display_safe_df(result), width="stretch")
         else:
             st.write(result)
 
@@ -339,7 +347,7 @@ if uploaded_file:
         qna_example, _ = dataset_examples(df)
 
         st.subheader("Data preview")
-        st.dataframe(df.head(10), width="stretch")
+        st.dataframe(make_display_safe_df(df.head(10)), width="stretch")
         st.caption(f"Shape: {df.shape[0]:,} rows × {df.shape[1]} columns")
 
         if st.button("Run AI Analysis", type="primary"):
