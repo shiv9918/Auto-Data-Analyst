@@ -24,7 +24,8 @@ def run_cleaning_agent(filepath: str) -> tuple[pd.DataFrame, str]:
 
     # Convert columns with 'date' or 'time' in their name to datetime format
     for col in df.columns:
-        if "date" in col.lower() or "time" in col.lower():
+        col_name = str(col).lower()
+        if "date" in col_name or "time" in col_name:
             try:
                 df[col] = pd.to_datetime(df[col])
                 report_lines.append(f"Converted '{col}' to datetime.")
@@ -44,7 +45,7 @@ def run_cleaning_agent(filepath: str) -> tuple[pd.DataFrame, str]:
             report_lines.append(f"Filled {missing} missing values in '{col}' with mode.")
 
     # Standardize column names to lowercase with underscores
-    df.columns = [c.strip().lower().replace(" ", "_") for c in df.columns]
+    df.columns = [str(c).strip().lower().replace(" ", "_") for c in df.columns]
     report_lines.append("Normalized all column names to snake_case.")
 
     # Ask AI to write a summary of what was cleaned
