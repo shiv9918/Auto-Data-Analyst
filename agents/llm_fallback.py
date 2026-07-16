@@ -112,6 +112,16 @@ def kickoff_with_llm_fallback(
     # Import CrewAI components (Agent, Task, Crew)
     from crewai import Agent, Task, Crew
 
+    # Workaround: CrewAI injects an Anthropic-only 'cache_breakpoint' field into
+    # every provider's messages, which Groq's API rejects with a 400 error.
+    # https://github.com/crewAIInc/crewAI/issues/5886
+    try:
+        import crewai.llms.cache as _crewai_cache
+
+        _crewai_cache.mark_cache_breakpoint = lambda msg, *args, **kwargs: msg
+    except ImportError:
+        pass
+
     load_dotenv()
 
     # Get API key from environment
