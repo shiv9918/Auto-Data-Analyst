@@ -110,7 +110,11 @@ def remove_limit_message(text: str) -> str:
 
 
 # Invoke LLM directly for quick questions (uses Groq API)
-def invoke_llm_with_fallback(prompt: str) -> str:
+# `label` tags which call this is (e.g. "answer", "pandas_code", "formula") in
+# the debug log line below - it has no effect on the request itself.
+def invoke_llm_with_fallback(prompt: str, label: str = "request") -> str:
+    import time
+
     load_dotenv()
 
     # Get LLM model and API key from environment
@@ -132,6 +136,8 @@ def invoke_llm_with_fallback(prompt: str) -> str:
     from groq import Groq
 
     client = Groq(api_key=groq_key)
+    print(f"  [LLM] -> calling Groq ({label}) | model={groq_client_model} | prompt_chars={len(prompt)}")
+    start = time.perf_counter()
     response = client.chat.completions.create(
         model=groq_client_model,
         messages=[
@@ -139,7 +145,11 @@ def invoke_llm_with_fallback(prompt: str) -> str:
             {"role": "user", "content": prompt},
         ],
     )
-    return response.choices[0].message.content or ""
+    answer = response.choices[0].message.content or ""
+    elapsed = time.perf_counter() - start
+    print(f"  [LLM] <- Groq responded ({label}) | {elapsed:.2f}s | response_chars={len(answer)}")
+
+    return answer
 
 
 # Suggest example questions based on the data columns
