@@ -1,6 +1,7 @@
 # This agent creates final PDF and Markdown reports with all analysis results
 import os
 from fpdf import FPDF
+from matplotlib import font_manager
 
 # Create folder for saved reports
 OUTPUT_DIR = "outputs/reports/"
@@ -9,30 +10,51 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 # Custom PDF class to format the report nicely
 class ReportPDF(FPDF):
+    def __init__(self):
+        super().__init__()
+        self._font_family = self._register_unicode_fonts()
+
+    def _register_unicode_fonts(self):
+        try:
+            regular = font_manager.findfont(font_manager.FontProperties(family="DejaVu Sans"))
+            bold = font_manager.findfont(font_manager.FontProperties(family="DejaVu Sans", weight="bold"))
+            italic = font_manager.findfont(font_manager.FontProperties(family="DejaVu Sans", style="italic"))
+            bold_italic = font_manager.findfont(
+                font_manager.FontProperties(family="DejaVu Sans", weight="bold", style="italic")
+            )
+
+            self.add_font("DejaVu", "", regular)
+            self.add_font("DejaVu", "B", bold)
+            self.add_font("DejaVu", "I", italic)
+            self.add_font("DejaVu", "BI", bold_italic)
+            return "DejaVu"
+        except Exception:
+            return "Arial"
+
     # Add title at top of each page
     def header(self):
-        self.set_font("Arial", "B", 14)
+        self.set_font(self._font_family, "B", 14)
         self.cell(0, 10, "Automated Data Analysis Report", ln=True, align="C")
         self.ln(4)
 
     # Add page number at bottom of each page
     def footer(self):
         self.set_y(-15)
-        self.set_font("Arial", "I", 8)
+        self.set_font(self._font_family, "I", 8)
         self.cell(0, 10, f"Page {self.page_no()}", align="C")
 
     # Add a text section with title and content
     def add_section(self, title: str, body: str):
-        self.set_font("Arial", "B", 12)
+        self.set_font(self._font_family, "B", 12)
         self.cell(0, 8, title, ln=True)
-        self.set_font("Arial", "", 10)
+        self.set_font(self._font_family, "", 10)
         self.multi_cell(0, 6, body)
         self.ln(4)
 
     # Add an image to the report
     def add_image(self, img_path: str, title: str):
         if os.path.exists(img_path):
-            self.set_font("Arial", "B", 10)
+            self.set_font(self._font_family, "B", 10)
             self.cell(0, 6, title, ln=True)
             self.image(img_path, w=170)
             self.ln(4)
