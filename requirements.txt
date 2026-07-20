@@ -1,8 +1,6 @@
 streamlit==1.45.1
 plotly
 crewai
-crewai-tools
-langchain
 pandas
 numpy
 matplotlib<3.10
