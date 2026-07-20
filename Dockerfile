@@ -34,8 +34,12 @@ COPY . .
 # Expose port
 EXPOSE 8501
 
-# Health check
-HEALTHCHECK CMD curl --fail http://localhost:8501/_stcore/health || exit 1
+# No Docker-level HEALTHCHECK here - Render already does its own external
+# health check against /_stcore/health (see render.yaml healthCheckPath /
+# the dashboard Settings). An internal HEALTHCHECK would fire curl requests
+# against the same process from inside the container every 30s on top of
+# that, and its timing lines up with when this service has been segfaulting
+# (~60-90s after boot) - removing it as a low-risk diagnostic step.
 
 # Run the Streamlit UI
 CMD streamlit run app.py --server.port=8501 --server.address=0.0.0.0
