@@ -14,3 +14,4 @@ headless = true
 port = 8501
 enableXsrfProtection = true
 maxUploadSize = 200
+fileWatcherType = "none"

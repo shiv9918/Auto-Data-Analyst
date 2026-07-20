@@ -66,7 +66,7 @@ def render_eda_tab(eda_results: dict) -> None:
         stats_df = pd.DataFrame(describe).T
         stats_df["skew"] = pd.Series(stats.get("skewness", {}))
         stats_df["kurtosis"] = pd.Series(stats.get("kurtosis", {}))
-        st.dataframe(make_display_safe_df(stats_df).style.format("{:.3f}"), width="stretch")
+        st.dataframe(make_display_safe_df(stats_df).style.format("{:.3f}"), use_container_width=True)
 
     # Display outliers in a side-by-side layout
     col1, col2 = st.columns(2)
@@ -86,7 +86,7 @@ def render_eda_tab(eda_results: dict) -> None:
             corr_df = pd.DataFrame(correlation)
             st.dataframe(
                 make_display_safe_df(corr_df).style.background_gradient(cmap="RdBu_r", vmin=-1, vmax=1).format("{:.2f}"),
-                width="stretch",
+                use_container_width=True,
             )
         else:
             st.caption("Not enough numeric columns for a correlation matrix.")
@@ -164,13 +164,13 @@ def render_dashboard_tab(df: pd.DataFrame) -> None:
     else:
         grouped = grouped.sort_values(y_col, ascending=False).head(30)
         fig = px.bar(grouped, x=x_axis, y=y_col, title=f"{agg.upper()} of {metric} by {x_axis}")
-    st.plotly_chart(fig, width="stretch")
+    st.plotly_chart(fig, use_container_width=True)
 
     ec1, ec2 = st.columns(2)
     with ec1:
         st.plotly_chart(
             px.histogram(filtered, x=metric, nbins=30, title=f"Distribution of {metric}"),
-            width="stretch",
+            use_container_width=True,
         )
     with ec2:
         if len(numeric_cols) >= 2:
@@ -182,7 +182,7 @@ def render_dashboard_tab(df: pd.DataFrame) -> None:
                 color=category_filter_col if category_filter_col != "None" else None,
                 title=f"{metric} vs {second_metric}",
             )
-            st.plotly_chart(scatter, width="stretch")
+            st.plotly_chart(scatter, use_container_width=True)
         else:
             st.info("Add another numeric column to enable scatter plot.")
 
@@ -276,9 +276,9 @@ Rules:
         if isinstance(result, pd.Series):
             out_df = result.reset_index()
             out_df.columns = ["index", "value"]
-            st.dataframe(make_display_safe_df(out_df), width="stretch")
+            st.dataframe(make_display_safe_df(out_df), use_container_width=True)
         elif isinstance(result, pd.DataFrame):
-            st.dataframe(make_display_safe_df(result), width="stretch")
+            st.dataframe(make_display_safe_df(result), use_container_width=True)
         else:
             st.write(result)
 
@@ -347,15 +347,54 @@ if uploaded_file:
         qna_example, _ = dataset_examples(df)
 
         st.subheader("Data preview")
-        st.dataframe(make_display_safe_df(df.head(10)), width="stretch")
+        st.dataframe(make_display_safe_df(df.head(10)), use_container_width=True)
         st.caption(f"Shape: {df.shape[0]:,} rows × {df.shape[1]} columns")
+
+        with st.expander("Cleaning options", expanded=False):
+            st.caption("These control the cleaning agent's optional, opinionated steps. Missing values, duplicates, "
+                       "bad types, and messy text are always fixed automatically.")
+            outlier_mode = st.radio(
+                "Outliers (IQR method)",
+                ["Cap to normal range (recommended)", "Remove rows", "Leave as-is"],
+                index=0,
+                horizontal=True,
+            )
+            col_a, col_b = st.columns(2)
+            with col_a:
+                remove_correlated = st.checkbox("Remove highly correlated columns (>0.95)", value=False)
+                encode_categorical = st.checkbox("Add encoded columns for categorical variables", value=False)
+            with col_b:
+                scale_numeric = st.checkbox("Scale numeric features (z-score)", value=False)
+
+            st.markdown("**Rename columns** (optional - leave a row unchanged to keep the original name)")
+            rename_editor = st.data_editor(
+                pd.DataFrame({"original_column": df.columns, "new_name": df.columns}),
+                hide_index=True,
+                use_container_width=True,
+                disabled=["original_column"],
+                key=f"rename_editor_{uploaded_file.name}",
+            )
+            rename_map = {
+                str(row["original_column"]): str(row["new_name"]).strip()
+                for _, row in rename_editor.iterrows()
+                if str(row["new_name"]).strip() and str(row["new_name"]).strip() != str(row["original_column"])
+            }
+
+        cleaning_config = {
+            "cap_outliers": outlier_mode.startswith("Cap"),
+            "remove_outliers": outlier_mode.startswith("Remove"),
+            "remove_correlated_columns": remove_correlated,
+            "encode_categorical": encode_categorical,
+            "scale_numeric": scale_numeric,
+            "rename_map": rename_map,
+        }
 
         if st.button("Run AI Analysis", type="primary"):
             try:
                 with st.status("Running AI agents…", expanded=True) as status:
                     def on_step(message: str, _status=status) -> None:
                         _status.write(message)
-                    results = run_pipeline(filepath, on_step=on_step)
+                    results = run_pipeline(filepath, on_step=on_step, cleaning_config=cleaning_config)
                     status.update(label="Analysis complete!", state="complete")
                 st.session_state.analysis_results = results
                 cleaned_path = results.get("cleaned_data_path")
@@ -405,7 +444,7 @@ if uploaded_file:
                     for i, path in enumerate(chart_paths):
                         name = os.path.basename(path).replace("_", " ").replace(".png", "")
                         with cols[i % 2]:
-                            st.image(path, caption=name, width="stretch")
+                            st.image(path, caption=name, use_container_width=True)
 
             with tab4:
                 st.subheader("Business insights")

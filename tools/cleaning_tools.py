@@ -20,6 +20,17 @@ MISSING_TOKENS = {
 
 _SAMPLE_ROWS_FOR_TYPE_SCAN = 50_000  # cap for per-value python-level scans
 
+# pandas >=3 defaults text columns to a new "str" dtype instead of "object".
+# select_dtypes(include="object") still matches it today for backward
+# compatibility (with a deprecation warning), but pandas <3 raises a TypeError
+# if "str" is passed to select_dtypes at all. Probe once at import time so
+# text-column detection keeps working - and stays warning-free - on both.
+try:
+    pd.DataFrame({"_probe": ["x"]}).select_dtypes(include=["object", "str"])
+    _TEXT_DTYPES = ["object", "str"]
+except TypeError:
+    _TEXT_DTYPES = ["object"]
+
 
 def _numeric_columns(df: pd.DataFrame, columns=None) -> list:
     cols = df.select_dtypes(include=np.number).columns
@@ -29,7 +40,7 @@ def _numeric_columns(df: pd.DataFrame, columns=None) -> list:
 
 
 def _object_columns(df: pd.DataFrame, columns=None) -> list:
-    cols = df.select_dtypes(include="object").columns
+    cols = df.select_dtypes(include=_TEXT_DTYPES).columns
     if columns is not None:
         cols = [c for c in cols if c in columns]
     return list(cols)

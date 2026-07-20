@@ -11,7 +11,7 @@ for _stream in (sys.stdout, sys.stderr):
 
 
 # Main function that runs the entire data analysis pipeline
-def run_pipeline(filepath: str, on_step=None) -> dict:
+def run_pipeline(filepath: str, on_step=None, cleaning_config: dict = None) -> dict:
     # Import all the agent functions that use CrewAI
     from agents.cleaning_agent import run_cleaning_agent
     from agents.eda_agent import run_eda_agent
@@ -31,7 +31,7 @@ def run_pipeline(filepath: str, on_step=None) -> dict:
 
     # Step 1: Clean the data
     notify("Step 1/5 - Cleaning agent is running (removing duplicates, fixing types, filling missing values)...")
-    df_clean, clean_report = run_cleaning_agent(filepath)
+    df_clean, clean_report = run_cleaning_agent(filepath, config=cleaning_config)
 
     # Save cleaned data to file
     os.makedirs("outputs", exist_ok=True)

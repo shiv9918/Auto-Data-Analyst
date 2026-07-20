@@ -19,13 +19,14 @@ load_dotenv()
 
 DEFAULT_CONFIG = {
     "remove_outliers": False,
-    "cap_outliers": False,
+    "cap_outliers": True,
     "remove_correlated_columns": False,
     "correlation_threshold": 0.95,
     "encode_categorical": False,
     "scale_numeric": False,
     "spelling_fix_similarity": 0.92,
     "large_dataset_threshold_mb": 200.0,
+    "rename_map": None,  # {original_column: new_name}, applied against the raw uploaded column names
 }
 
 
@@ -41,6 +42,14 @@ def run_cleaning_agent(filepath: str, config: dict = None) -> tuple[pd.DataFrame
     df = df.copy()
 
     report_lines = [f"Loaded {info['shape'][0]:,} rows x {info['shape'][1]:,} columns."]
+
+    # --- User-requested column renames (applied against raw column names) ---
+    if cfg.get("rename_map"):
+        valid_map = {k: v for k, v in cfg["rename_map"].items() if k in df.columns and v and str(v).strip() and str(v).strip() != k}
+        if valid_map:
+            df = ct.rename_columns(df, valid_map)
+            renamed_desc = ", ".join(f"'{k}' -> '{v}'" for k, v in valid_map.items())
+            report_lines.append(f"Renamed {len(valid_map)} columns: {renamed_desc}.")
 
     # --- Missing value placeholders -------------------------------------
     df, token_hits = ct.normalize_missing_tokens(df)
@@ -109,21 +118,21 @@ def run_cleaning_agent(filepath: str, config: dict = None) -> tuple[pd.DataFrame
         total_filled = sum(d["missing"] for d in fill_details.values())
         report_lines.append(f"Filled {total_filled} missing values across {len(fill_details)} columns (median for numeric, mode for text): {ct.summarize_list(fill_details.keys())}.")
 
-    # --- Outlier detection (reported; not removed by default so EDA/charts
-    # can still surface them) -------------------------------------------------
+    # --- Outlier handling ---------------------------------------------------
     outliers = ct.detect_outliers(df)
     if outliers:
         total_outliers = sum(o["count"] for o in outliers.values())
         report_lines.append(
-            f"Detected {total_outliers} potential outliers (IQR method) in {len(outliers)} columns: {ct.summarize_list(outliers.keys())}. "
-            "Not removed automatically - see EDA report."
+            f"Detected {total_outliers} potential outliers (IQR method) in {len(outliers)} columns: {ct.summarize_list(outliers.keys())}."
         )
         if cfg["remove_outliers"]:
             df, removed = ct.remove_outliers(df)
-            report_lines.append(f"Removed {removed} outlier rows (remove_outliers enabled).")
+            report_lines.append(f"Removed {removed} outlier rows.")
         elif cfg["cap_outliers"]:
             df, capped = ct.cap_outliers(df)
-            report_lines.append(f"Capped outlier values to IQR bounds in {len(capped)} columns (cap_outliers enabled).")
+            report_lines.append(f"Capped {sum(capped.values())} outlier values to IQR bounds in columns: {ct.summarize_list(capped.keys())}.")
+        else:
+            report_lines.append("Outliers left in place (outlier handling disabled) - see EDA report.")
 
     negative_values = ct.detect_negative_values(df)
     if negative_values:

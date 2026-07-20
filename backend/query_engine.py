@@ -6,7 +6,6 @@ import re
 import numpy as np
 import pandas as pd
 from dotenv import load_dotenv
-from langchain_groq import ChatGroq
 
 from agents.llm_fallback import is_rate_limit_error, build_limit_exceeded_message
 
@@ -113,13 +112,14 @@ def remove_limit_message(text: str) -> str:
 # Invoke LLM directly for quick questions (uses Groq API)
 def invoke_llm_with_fallback(prompt: str) -> str:
     # Import messaging components from LangChain
-    from langchain_core.messages import SystemMessage, HumanMessage
+    from langchain_core.messages import HumanMessage, SystemMessage
 
     load_dotenv()
 
     # Get LLM model and API key from environment
     groq_model = os.getenv("MODEL_NAME", "llama-3.3-70b-versatile")
     groq_key = os.getenv("GROQ_API_KEY", "").strip()
+    groq_client_model = groq_model.removeprefix("groq/")
 
     if not groq_key:
         raise RuntimeError("GROQ_API_KEY is missing.")
@@ -132,17 +132,31 @@ def invoke_llm_with_fallback(prompt: str) -> str:
 4. Use bullet points for multiple items
 5. Show calculations only when necessary for clarity"""
 
-    # Create Groq LLM instance
-    groq_llm = ChatGroq(model=groq_model, api_key=groq_key)
-
     # Prepare messages for the LLM
     messages = [
         SystemMessage(content=system_message),
         HumanMessage(content=prompt),
     ]
 
-    # Send to LLM and get response
-    return groq_llm.invoke(messages).content
+    # Prefer LangChain when the installed package set is compatible, but fall
+    # back to the direct Groq client when langchain_groq cannot import cleanly.
+    try:
+        from langchain_groq import ChatGroq
+
+        groq_llm = ChatGroq(model=groq_model, api_key=groq_key)
+        return groq_llm.invoke(messages).content
+    except Exception:
+        from groq import Groq
+
+        client = Groq(api_key=groq_key)
+        response = client.chat.completions.create(
+            model=groq_client_model,
+            messages=[
+                {"role": "system", "content": system_message},
+                {"role": "user", "content": prompt},
+            ],
+        )
+        return response.choices[0].message.content or ""
 
 
 # Suggest example questions based on the data columns

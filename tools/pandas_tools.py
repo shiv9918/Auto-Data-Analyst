@@ -8,6 +8,17 @@ import numpy as np
 # Above this file size, CSVs are read in chunks to keep parser peak memory down.
 LARGE_FILE_THRESHOLD_MB = 200
 
+# pandas >=3 defaults text columns to a new "str" dtype instead of "object".
+# select_dtypes(include="object") still matches it today for backward
+# compatibility (with a deprecation warning), but pandas <3 raises a TypeError
+# if "str" is passed to select_dtypes at all. Probe once so text-column
+# detection stays correct - and warning-free - on both major versions.
+try:
+    pd.DataFrame({"_probe": ["x"]}).select_dtypes(include=["object", "str"])
+    _TEXT_DTYPES = ["object", "str"]
+except TypeError:
+    _TEXT_DTYPES = ["object"]
+
 
 # Load CSV or Excel files into a dataframe
 def load_file(filepath: str, chunksize: int = None) -> pd.DataFrame:
@@ -37,7 +48,7 @@ def get_basic_info(df: pd.DataFrame) -> dict:
         "missing_values": df.isnull().sum().to_dict(),  # Missing values per column
         "duplicate_rows": int(df.duplicated().sum()),  # Number of duplicate rows
         "numeric_columns": list(df.select_dtypes(include=np.number).columns),  # Number columns
-        "categorical_columns": list(df.select_dtypes(include="object").columns),  # Text columns
+        "categorical_columns": list(df.select_dtypes(include=_TEXT_DTYPES).columns),  # Text columns
     }
 
 
