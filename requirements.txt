@@ -3,7 +3,6 @@ plotly
 crewai
 crewai-tools
 langchain
-langchain-groq
 pandas
 numpy
 matplotlib<3.10
