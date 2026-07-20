@@ -1,12 +1,26 @@
 # Utility tools for data analysis using pandas
 # Provides functions for loading, analyzing, and summarizing data
+import os
+
 import pandas as pd
 import numpy as np
 
+# Above this file size, CSVs are read in chunks to keep parser peak memory down.
+LARGE_FILE_THRESHOLD_MB = 200
+
 
 # Load CSV or Excel files into a dataframe
-def load_file(filepath: str) -> pd.DataFrame:
+def load_file(filepath: str, chunksize: int = None) -> pd.DataFrame:
     if filepath.endswith(".csv"):
+        if chunksize is None:
+            try:
+                size_mb = os.path.getsize(filepath) / (1024 * 1024)
+            except OSError:
+                size_mb = 0
+            if size_mb > LARGE_FILE_THRESHOLD_MB:
+                chunksize = 200_000
+        if chunksize:
+            return pd.concat(pd.read_csv(filepath, chunksize=chunksize), ignore_index=True)
         return pd.read_csv(filepath)
     elif filepath.endswith((".xlsx", ".xls")):
         return pd.read_excel(filepath)
