@@ -1,7 +1,6 @@
 # This agent converts data analysis into business insights and recommendations
 import pandas as pd
 from dotenv import load_dotenv
-import os
 import json
 from agents.llm_fallback import kickoff_with_llm_fallback, is_rate_limit_error, get_shared_limit_message
 

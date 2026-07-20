@@ -5,7 +5,6 @@ from tools.chart_generator import (
     plot_correlation_heatmap, plot_line, plot_boxplot
 )
 from dotenv import load_dotenv
-import os
 from agents.llm_fallback import kickoff_with_llm_fallback, is_rate_limit_error, get_shared_limit_message
 
 load_dotenv()

@@ -2,7 +2,6 @@
 import pandas as pd
 from tools.pandas_tools import get_statistics, detect_outliers, get_correlation
 from dotenv import load_dotenv
-import os
 import json
 from agents.llm_fallback import kickoff_with_llm_fallback, is_rate_limit_error, get_shared_limit_message
 

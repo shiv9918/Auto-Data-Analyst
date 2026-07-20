@@ -351,42 +351,32 @@ if uploaded_file:
         st.caption(f"Shape: {df.shape[0]:,} rows × {df.shape[1]} columns")
 
         with st.expander("Cleaning options", expanded=False):
-            st.caption("These control the cleaning agent's optional, opinionated steps. Missing values, duplicates, "
-                       "bad types, and messy text are always fixed automatically.")
+            st.caption("These control the two cleaning steps that need a choice made. Missing values, "
+                       "placeholder text ('NAN'/'NULL'), duplicate rows, empty rows/columns, and extra "
+                       "spaces are always fixed automatically.")
             outlier_mode = st.radio(
                 "Outliers (IQR method)",
                 ["Cap to normal range (recommended)", "Remove rows", "Leave as-is"],
                 index=0,
                 horizontal=True,
             )
-            col_a, col_b = st.columns(2)
-            with col_a:
-                remove_correlated = st.checkbox("Remove highly correlated columns (>0.95)", value=False)
-                encode_categorical = st.checkbox("Add encoded columns for categorical variables", value=False)
-            with col_b:
-                scale_numeric = st.checkbox("Scale numeric features (z-score)", value=False)
-
-            st.markdown("**Rename columns** (optional - leave a row unchanged to keep the original name)")
-            rename_editor = st.data_editor(
-                pd.DataFrame({"original_column": df.columns, "new_name": df.columns}),
-                hide_index=True,
-                use_container_width=True,
-                disabled=["original_column"],
-                key=f"rename_editor_{uploaded_file.name}",
+            encoding_mode = st.radio(
+                "Standardize categorical values",
+                ["One-hot encoding (recommended)", "Mean encoding", "None"],
+                index=0,
+                horizontal=True,
             )
-            rename_map = {
-                str(row["original_column"]): str(row["new_name"]).strip()
-                for _, row in rename_editor.iterrows()
-                if str(row["new_name"]).strip() and str(row["new_name"]).strip() != str(row["original_column"])
-            }
+            target_column = None
+            if encoding_mode == "Mean encoding":
+                target_column = st.selectbox(
+                    "Target column to average (mean encoding needs a numeric column to average per category)",
+                    df.select_dtypes(include="number").columns.tolist(),
+                )
 
         cleaning_config = {
-            "cap_outliers": outlier_mode.startswith("Cap"),
-            "remove_outliers": outlier_mode.startswith("Remove"),
-            "remove_correlated_columns": remove_correlated,
-            "encode_categorical": encode_categorical,
-            "scale_numeric": scale_numeric,
-            "rename_map": rename_map,
+            "outlier_strategy": {"Cap to normal range (recommended)": "cap", "Remove rows": "remove", "Leave as-is": "none"}[outlier_mode],
+            "encoding_method": {"One-hot encoding (recommended)": "onehot", "Mean encoding": "mean", "None": "none"}[encoding_mode],
+            "target_column": target_column,
         }
 
         if st.button("Run AI Analysis", type="primary"):
