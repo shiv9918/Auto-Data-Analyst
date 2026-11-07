@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="360" viewBox="0 0 1000 360">
+<title>Auto-Data-Analyst animated project banner</title>
+<defs><linearGradient id="bg" x2="1" y2="1"><stop stop-color="#090f1e"/><stop offset="1" stop-color="#152035"/></linearGradient><radialGradient id="glow"><stop stop-color="#7dd3fc" stop-opacity=".14"/><stop offset="1" stop-color="#7dd3fc" stop-opacity="0"/></radialGradient><pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse"><path d="M32 0H0V32" stroke="#889fc3" stroke-opacity=".045" fill="none"/></pattern></defs>
+<rect x="1" y="1" width="998" height="358" rx="22" fill="url(#bg)" stroke="#2b3851"/>
+<rect x="1" y="1" width="998" height="358" rx="22" fill="url(#grid)"/>
+<ellipse cx="770" cy="176" rx="220" ry="180" fill="url(#glow)"/>
+<rect x="44" y="40" width="4" height="15" rx="2" fill="#7dd3fc"/>
+<text x="58" y="52" fill="#7dd3fc" font-family="Arial, sans-serif" font-size="12" letter-spacing="2">DATA SCIENCE / MULTI-AGENT AI</text>
+<text x="42" y="122" fill="#f1f5ff" font-family="Arial, sans-serif" font-size="57" font-weight="700" letter-spacing="-1.6">Auto Data</text>
+<text x="42" y="180" fill="#f1f5ff" font-family="Arial, sans-serif" font-size="57" font-weight="700" letter-spacing="-1.6">Analyst</text>
+<text x="45" y="222" fill="#a8b9d3" font-family="Arial, sans-serif" font-size="19">From raw data to clear insights.</text>
+<rect x="45" y="278" width="130" height="35" rx="7" fill="#111e31" stroke="#7dd3fc" stroke-opacity="0.72"/>
+<circle cx="58.00" cy="295.00" r="3" fill="#7dd3fc" opacity="1.0"/>
+<text x="70" y="299" fill="#cbd7e9" font-family="monospace" font-size="11">CLEAN</text>
+<rect x="190" y="278" width="130" height="35" rx="7" fill="#111e31" stroke="#7dd3fc" stroke-opacity="0.35"/>
+<circle cx="203.00" cy="295.00" r="3" fill="#7dd3fc" opacity="0.5125000000000001"/>
+<text x="215" y="299" fill="#cbd7e9" font-family="monospace" font-size="11">ANALYZE</text>
+<rect x="335" y="278" width="130" height="35" rx="7" fill="#111e31" stroke="#7dd3fc" stroke-opacity="0.34"/>
+<circle cx="348.00" cy="295.00" r="3" fill="#7dd3fc" opacity="0.5124999999999998"/>
+<text x="360" y="299" fill="#cbd7e9" font-family="monospace" font-size="11">EXPLAIN</text>
+<path d="M555.00,45.00L555.00,315.00" stroke="#33435d" stroke-width="1" opacity="0.55"/>
+<polygon points="665.70,214.40 687.02,223.76 687.02,178.76 665.70,169.40" fill="#122539" stroke="#7dd3fc" opacity="0.9"/><polygon points="687.02,223.76 665.70,233.12 665.70,188.12 687.02,178.76" fill="#1d354a" stroke="#7dd3fc" opacity="0.9"/><polygon points="665.70,169.40 687.02,178.76 665.70,188.12 644.38,178.76" fill="#244758" stroke="#7dd3fc" opacity="1"/>
+<polygon points="700.14,229.52 721.46,238.88 721.46,168.55 700.14,159.19" fill="#122539" stroke="#7dd3fc" opacity="0.9"/><polygon points="721.46,238.88 700.14,248.24 700.14,177.91 721.46,168.55" fill="#1d354a" stroke="#7dd3fc" opacity="0.9"/><polygon points="700.14,159.19 721.46,168.55 700.14,177.91 678.82,168.55" fill="#244758" stroke="#7dd3fc" opacity="1"/>
+<polygon points="734.58,244.64 755.90,254.00 755.90,164.01 734.58,154.65" fill="#122539" stroke="#7dd3fc" opacity="0.9"/><polygon points="755.90,254.00 734.58,263.36 734.58,173.37 755.90,164.01" fill="#1d354a" stroke="#7dd3fc" opacity="0.9"/><polygon points="734.58,154.65 755.90,164.01 734.58,173.37 713.26,164.01" fill="#244758" stroke="#7dd3fc" opacity="1"/>
+<polygon points="769.02,259.76 790.34,269.12 790.34,167.34 769.02,157.98" fill="#122539" stroke="#7dd3fc" opacity="0.9"/><polygon points="790.34,269.12 769.02,278.48 769.02,176.70 790.34,167.34" fill="#1d354a" stroke="#7dd3fc" opacity="0.9"/><polygon points="769.02,157.98 790.34,167.34 769.02,176.70 747.70,167.34" fill="#244758" stroke="#7dd3fc" opacity="1"/>
+<polygon points="803.46,274.88 824.78,284.24 824.78,176.00 803.46,166.64" fill="#122539" stroke="#7dd3fc" opacity="0.9"/><polygon points="824.78,284.24 803.46,293.60 803.46,185.36 824.78,176.00" fill="#1d354a" stroke="#7dd3fc" opacity="0.9"/><polygon points="803.46,166.64 824.78,176.00 803.46,185.36 782.14,176.00" fill="#244758" stroke="#7dd3fc" opacity="1"/>
+<path d="M625.00,133.00L677.00,113.24" stroke="#a5b4fc" stroke-width="2" opacity="1"/>
+<path d="M677.00,113.24L729.00,100.01" stroke="#a5b4fc" stroke-width="2" opacity="1"/>
+<path d="M729.00,100.01L781.00,95.87" stroke="#a5b4fc" stroke-width="2" opacity="1"/>
+<path d="M781.00,95.87L833.00,97.88" stroke="#a5b4fc" stroke-width="2" opacity="1"/>
+<path d="M833.00,97.88L885.00,99.35" stroke="#a5b4fc" stroke-width="2" opacity="1"/>
+<circle cx="625.00" cy="133.00" r="4" fill="#a5b4fc" opacity="1"/>
+<circle cx="677.00" cy="113.24" r="4" fill="#a5b4fc" opacity="1"/>
+<circle cx="729.00" cy="100.01" r="4" fill="#a5b4fc" opacity="1"/>
+<circle cx="781.00" cy="95.87" r="4" fill="#a5b4fc" opacity="1"/>
+<circle cx="833.00" cy="97.88" r="4" fill="#a5b4fc" opacity="1"/>
+<circle cx="885.00" cy="99.35" r="4" fill="#a5b4fc" opacity="1"/>
+<path d="M610 276H935" stroke="#32455f"/>
+</svg>

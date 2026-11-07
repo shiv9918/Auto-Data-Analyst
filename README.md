@@ -1,10 +1,10 @@
 <div align="center">
 
-<img width="100%" src="https://capsule-render.vercel.app/api?type=waving&height=260&color=0:020617,25:0f172a,55:0f766e,100:22c55e&text=Auto%20Data%20Analyst&fontColor=f8fafc&fontAlignY=38&desc=An%20AI-powered%20multi-agent%20system%20for%20cleaning,%20analysis,%20visualization,%20and%20reporting&descAlignY=58&animation=twinkling" alt="Auto Data Analyst banner"/>
+<img src="./docs/readme-assets/hero.gif" width="100%" alt="Auto Data Analyst: animated isometric data columns and a flowing analysis curve." />
 
 <br/>
 
-<img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=700&size=24&pause=900&color=14B8A6&center=true&vCenter=true&width=980&lines=Upload+data.+Get+cleaning%2C+EDA%2C+insights%2C+charts%2C+and+reports.;Built+with+specialized+AI+agents+for+every+stage+of+analysis.;A+portfolio-ready+analytics+project+with+real+deployment+support." alt="Typing SVG" />
+<a href="./docs/readme-assets/hero.svg">View a still version</a>
 
 <br/>
 
