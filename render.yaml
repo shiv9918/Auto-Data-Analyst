@@ -10,8 +10,8 @@ services:
       - key: GROQ_API_KEY
         scope: build,runtime
       - key: MODEL_NAME
-        value: llama-3.3-70b-versatile
+        value: openai/gpt-oss-120b
       - key: CREW_MODEL
-        value: groq/llama-3.3-70b-versatile
+        value: groq/openai/gpt-oss-120b
     healthCheckPath: /_stcore/health
     preDeployCommand: echo "Pre-deploy checks passed"

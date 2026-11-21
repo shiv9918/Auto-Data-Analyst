@@ -7,8 +7,23 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+DEFAULT_GROQ_MODEL = "openai/gpt-oss-120b"
+
 # Store rate limit error messages to show users
 _shared_limit_message = None
+
+
+def get_groq_model(*, for_crew: bool = False) -> str:
+    model = os.getenv("MODEL_NAME", "").strip()
+    if for_crew:
+        model = os.getenv("CREW_MODEL", "").strip() or model
+    model = model.removeprefix("groq/")
+
+    # Existing deployments can still carry the retired model in their environment.
+    if not model or model == "llama-3.3-70b-versatile":
+        return DEFAULT_GROQ_MODEL
+    return model
+
 
 # Function to detect if an error is a rate limit error
 def is_rate_limit_error(err: Exception) -> bool:
@@ -109,8 +124,7 @@ def kickoff_with_llm_fallback(
     prompt: str,
     expected_output: str,
 ) -> tuple[str, str]:
-    # Import CrewAI components (Agent, Task, Crew)
-    from crewai import Agent, Task, Crew
+    from crewai import Agent, Crew, LLM, Task
 
     # Workaround: CrewAI injects an Anthropic-only 'cache_breakpoint' field into
     # every provider's messages, which Groq's API rejects with a 400 error.
@@ -130,15 +144,20 @@ def kickoff_with_llm_fallback(
     if not groq_api_key:
         raise RuntimeError("GROQ_API_KEY is missing.")
 
-    # Use Groq's LLM model for faster processing
-    model_string = "groq/llama-3.3-70b-versatile"
+    # CrewAI strips the routing prefix and sends the full model ID to Groq.
+    groq_llm = LLM(
+        model=f"openai/{get_groq_model(for_crew=True)}",
+        base_url="https://api.groq.com/openai/v1",
+        api_key=groq_api_key,
+        custom_openai=True,
+    )
 
     # CREATE AGENT: This is where each agent (cleaning, eda, viz, etc.) is defined
     primary_agent = Agent(
         role=role,  # Role like "Data Cleaning Specialist" or "EDA Specialist"
         goal=goal,  # Goal like "Clean and prepare data for analysis"
         backstory=backstory,  # Background to give context to the AI
-        llm=model_string,  # Which LLM model to use
+        llm=groq_llm,
         verbose=False,
     )
     # CREATE TASK: What the agent should do

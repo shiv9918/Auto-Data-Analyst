@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 from dotenv import load_dotenv
 
-from agents.llm_fallback import is_rate_limit_error, build_limit_exceeded_message
+from agents.llm_fallback import build_limit_exceeded_message, get_groq_model, is_rate_limit_error
 
 
 # Extract Python code from LLM response (removes markdown formatting)
@@ -118,9 +118,8 @@ def invoke_llm_with_fallback(prompt: str, label: str = "request") -> str:
     load_dotenv()
 
     # Get LLM model and API key from environment
-    groq_model = os.getenv("MODEL_NAME", "llama-3.3-70b-versatile")
     groq_key = os.getenv("GROQ_API_KEY", "").strip()
-    groq_client_model = groq_model.removeprefix("groq/")
+    groq_client_model = get_groq_model()
 
     if not groq_key:
         raise RuntimeError("GROQ_API_KEY is missing.")
