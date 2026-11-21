@@ -1,16 +1,24 @@
 # This file manages AI interactions using CrewAI framework and handles rate limits
 # KEY FILE: All agents connect through CrewAI's Agent, Task, and Crew classes here
+from __future__ import annotations
+
 import os
 import re
+from contextvars import ContextVar
+from typing import TYPE_CHECKING
+
 from dotenv import load_dotenv
+
+if TYPE_CHECKING:
+    from crewai.tools import BaseTool
 
 
 load_dotenv()
 
 DEFAULT_GROQ_MODEL = "openai/gpt-oss-120b"
 
-# Store rate limit error messages to show users
-_shared_limit_message = None
+# Share the retry message across stages of the current analysis.
+_shared_limit_message: ContextVar[str | None] = ContextVar("limit_message", default=None)
 
 
 def get_groq_model(*, for_crew: bool = False) -> str:
@@ -102,17 +110,16 @@ def build_limit_exceeded_message(err: Exception) -> str:
 
 # Store and retrieve shared limit message across the app
 def get_shared_limit_message(err: Exception) -> str:
-    global _shared_limit_message
-    if _shared_limit_message:
-        return _shared_limit_message
-    _shared_limit_message = build_limit_exceeded_message(err)
-    return _shared_limit_message
+    message = _shared_limit_message.get()
+    if message is None:
+        message = build_limit_exceeded_message(err)
+        _shared_limit_message.set(message)
+    return message
 
 
 # Clear the stored limit message when starting a new pipeline
 def reset_shared_limit_message() -> None:
-    global _shared_limit_message
-    _shared_limit_message = None
+    _shared_limit_message.set(None)
 
 
 # *** MAIN FUNCTION: WHERE ALL AGENTS CONNECT THROUGH CREWAI ***
@@ -123,6 +130,8 @@ def kickoff_with_llm_fallback(
     backstory: str,
     prompt: str,
     expected_output: str,
+    *,
+    tools: list[BaseTool] | None = None,
 ) -> tuple[str, str]:
     from crewai import Agent, Crew, LLM, Task
 
@@ -144,12 +153,26 @@ def kickoff_with_llm_fallback(
     if not groq_api_key:
         raise RuntimeError("GROQ_API_KEY is missing.")
 
+    llm_options = {}
+    agent_options = {}
+    task_options = {}
+    crew_options = {}
+    if tools:
+        llm_options = {"parallel_tool_calls": False, "timeout": 25, "max_retries": 0}
+        agent_options = {
+            "tools": tools, "cache": False, "allow_delegation": False,
+            "max_iter": 12, "max_retry_limit": 0, "max_execution_time": 90,
+        }
+        task_options = {"tool_failure_policy": "raise"}
+        crew_options = {"cache": False, "tracing": False}
+
     # CrewAI strips the routing prefix and sends the full model ID to Groq.
     groq_llm = LLM(
         model=f"openai/{get_groq_model(for_crew=True)}",
         base_url="https://api.groq.com/openai/v1",
         api_key=groq_api_key,
         custom_openai=True,
+        **llm_options,
     )
 
     # CREATE AGENT: This is where each agent (cleaning, eda, viz, etc.) is defined
@@ -159,19 +182,18 @@ def kickoff_with_llm_fallback(
         backstory=backstory,  # Background to give context to the AI
         llm=groq_llm,
         verbose=False,
+        **agent_options,
     )
     # CREATE TASK: What the agent should do
     primary_task = Task(
         description=prompt,  # Detailed task description
         agent=primary_agent,  # Assign task to the agent
         expected_output=expected_output,  # What we expect as output
+        **task_options,
     )
     # CREATE CREW: Combine agent and tasks into a crew
-    primary_crew = Crew(agents=[primary_agent], tasks=[primary_task], verbose=False)
+    primary_crew = Crew(agents=[primary_agent], tasks=[primary_task], verbose=False, **crew_options)
 
     # RUN THE CREW: Execute the task using kickoff() method
-    try:
-        result = primary_crew.kickoff()
-        return str(result), "groq"
-    except Exception:
-        raise
+    result = primary_crew.kickoff()
+    return str(result), "groq"

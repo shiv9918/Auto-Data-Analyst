@@ -22,7 +22,8 @@ except TypeError:
 
 # Load CSV or Excel files into a dataframe
 def load_file(filepath: str, chunksize: int = None) -> pd.DataFrame:
-    if filepath.endswith(".csv"):
+    extension = os.path.splitext(filepath)[1].lower()
+    if extension == ".csv":
         if chunksize is None:
             try:
                 size_mb = os.path.getsize(filepath) / (1024 * 1024)
@@ -33,7 +34,7 @@ def load_file(filepath: str, chunksize: int = None) -> pd.DataFrame:
         if chunksize:
             return pd.concat(pd.read_csv(filepath, chunksize=chunksize), ignore_index=True)
         return pd.read_csv(filepath)
-    elif filepath.endswith((".xlsx", ".xls")):
+    elif extension in (".xlsx", ".xls"):
         return pd.read_excel(filepath)
     else:
         raise ValueError("Only CSV and Excel files supported.")

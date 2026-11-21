@@ -1,6 +1,6 @@
 streamlit==1.45.1
 plotly
-crewai>=1.15.17,<2
+crewai>=1.15.44,<2
 pandas
 numpy
 matplotlib<3.10
@@ -9,4 +9,5 @@ scipy
 fpdf2
 python-dotenv
 openpyxl
+xlrd>=2,<3
 groq

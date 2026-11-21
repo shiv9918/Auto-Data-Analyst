@@ -2,6 +2,8 @@
 import os
 import sys
 
+from backend.analysis_artifacts import analysis_artifacts
+
 # Ensure UTF-8 encoding is used for printing
 for _stream in (sys.stdout, sys.stderr):
     try:
@@ -33,27 +35,27 @@ def run_pipeline(filepath: str, on_step=None, cleaning_config: dict = None) -> d
     notify("Step 1/5 - Cleaning agent is running (removing duplicates, fixing types, filling missing values)...")
     df_clean, clean_report = run_cleaning_agent(filepath, config=cleaning_config)
 
-    # Save cleaned data to file
-    os.makedirs("outputs", exist_ok=True)
-    source_name = os.path.splitext(os.path.basename(filepath))[0]
-    cleaned_data_path = os.path.join("outputs", f"{source_name}_cleaned.csv")
-    df_clean.to_csv(cleaned_data_path, index=False)
+    with analysis_artifacts() as output_directory:
+        # Save cleaned data to file
+        source_name = os.path.splitext(os.path.basename(filepath))[0]
+        cleaned_data_path = str(output_directory / f"{source_name}_cleaned.csv")
+        df_clean.to_csv(cleaned_data_path, index=False)
 
-    # Step 2: Analyze data patterns
-    notify("Step 2/5 - EDA agent is running (statistics, outliers, correlations)...")
-    eda_results = run_eda_agent(df_clean)
+        # Step 2: Analyze data patterns
+        notify("Step 2/5 - EDA agent is running (statistics, outliers, correlations)...")
+        eda_results = run_eda_agent(df_clean)
 
-    # Step 3: Create visualizations
-    notify("Step 3/5 - Visualization agent is running (generating charts)...")
-    viz_results = run_visualization_agent(df_clean)
+        # Step 3: Create visualizations
+        notify("Step 3/5 - Visualization agent is running (generating charts)...")
+        viz_results = run_visualization_agent(df_clean)
 
-    # Step 4: Generate business insights
-    notify("Step 4/5 - Insight agent is running (generating business insights)...")
-    insights = run_insight_agent(df_clean, eda_results)
+        # Step 4: Generate business insights
+        notify("Step 4/5 - Insight agent is running (generating business insights)...")
+        insights = run_insight_agent(df_clean, eda_results)
 
-    # Step 5: Create final report
-    notify("Step 5/5 - Report agent is running (building PDF report)...")
-    report_path = run_report_agent(clean_report, eda_results, viz_results, insights)
+        # Step 5: Create final report
+        notify("Step 5/5 - Report agent is running (building PDF report)...")
+        report_path = run_report_agent(clean_report, eda_results, viz_results, insights)
 
     # Show completion message
     notify(f"Done! Report saved to: {report_path}")

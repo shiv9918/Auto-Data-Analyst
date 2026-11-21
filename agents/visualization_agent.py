@@ -1,4 +1,6 @@
 # This agent creates visualizations (charts and graphs) to show data patterns
+from threading import Lock
+
 import pandas as pd
 from tools.chart_generator import (
     plot_histogram, plot_bar,
@@ -8,6 +10,7 @@ from dotenv import load_dotenv
 from agents.llm_fallback import kickoff_with_llm_fallback, is_rate_limit_error, get_shared_limit_message
 
 load_dotenv()
+_chart_lock = Lock()
 
 
 # Main function that generates different types of charts
@@ -16,15 +19,17 @@ def run_visualization_agent(df: pd.DataFrame) -> dict:
     chart_paths = []
 
     # Generate different chart types
-    chart_paths += plot_histogram(df)  # Show data distribution
-    chart_paths += plot_bar(df)  # Show category counts
-    chart_paths += plot_boxplot(df)  # Show outliers and quartiles
-    chart_paths += plot_line(df)  # Show trends over time
+    # Matplotlib's current figure is shared across sessions.
+    with _chart_lock:
+        chart_paths += plot_histogram(df)  # Show data distribution
+        chart_paths += plot_bar(df)  # Show category counts
+        chart_paths += plot_boxplot(df)  # Show outliers and quartiles
+        chart_paths += plot_line(df)  # Show trends over time
 
-    # Generate correlation heatmap showing relationships between numbers
-    heatmap = plot_correlation_heatmap(df)
-    if heatmap:
-        chart_paths.append(heatmap)
+        # Generate correlation heatmap showing relationships between numbers
+        heatmap = plot_correlation_heatmap(df)
+        if heatmap:
+            chart_paths.append(heatmap)
 
     # Prepare prompt for AI to explain the visualizations
     prompt = f"""
