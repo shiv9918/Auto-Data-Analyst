@@ -54,9 +54,26 @@ def _text_columns(df: pd.DataFrame, columns=None) -> list:
     return list(cols)
 
 
+def validate_cleaned_dataset(original: pd.DataFrame, cleaned: pd.DataFrame) -> None:
+    """Ensure the working data still has distinct columns and only source rows."""
+    if not cleaned.columns.is_unique:
+        raise ValueError("Cleaning produced duplicate column labels.")
+    if not cleaned.index.is_unique or not cleaned.index.isin(original.index).all():
+        raise ValueError("Cleaning produced invalid row indexes.")
+
+
 # ---------------------------------------------------------------------------
 # 1. Handle "NAN" / "NULL" placeholder values
 # ---------------------------------------------------------------------------
+
+def _placeholder_mask(column: pd.Series, tokens: set[str]) -> pd.Series:
+    normalized = column.astype(str).str.strip().str.lower()
+    return normalized.isin(tokens) & column.notna()
+
+
+def count_placeholder_values(df: pd.DataFrame) -> int:
+    return sum(int(_placeholder_mask(df[col], MISSING_TOKENS).sum()) for col in _text_columns(df))
+
 
 def handle_placeholder_missing_values(df: pd.DataFrame, extra_tokens=None) -> tuple:
     """
@@ -71,10 +88,7 @@ def handle_placeholder_missing_values(df: pd.DataFrame, extra_tokens=None) -> tu
 
     replaced_counts = {}
     for col in _text_columns(df):
-        # Normalize each value (trim spaces, lowercase) before comparing it
-        # against our list of "means nothing" tokens.
-        normalized = df[col].astype(str).str.strip().str.lower()
-        mask = normalized.isin(tokens) & df[col].notna()
+        mask = _placeholder_mask(df[col], tokens)
         count = int(mask.sum())
         if count:
             df.loc[mask, col] = np.nan  # turn the placeholder text into a real missing value
@@ -231,6 +245,26 @@ def handle_outliers(df: pd.DataFrame, columns=None, factor: float = 1.5, strateg
 # 8. Standardize categorical values (one-hot encoding / mean encoding)
 # ---------------------------------------------------------------------------
 
+def encodable_columns(df: pd.DataFrame, method: str, target_column, max_categories: int, columns=None) -> list:
+    if method == "mean":
+        if target_column not in df.columns or not pd.api.types.is_numeric_dtype(df[target_column]):
+            return []
+        return [col for col in _text_columns(df, columns) if col != target_column]
+    if method == "onehot":
+        return [col for col in _text_columns(df, columns) if df[col].nunique(dropna=True) <= max_categories]
+    return []
+
+
+def _available_column_name(name: str, used: set) -> str:
+    candidate = name
+    suffix = 2
+    while candidate in used:
+        candidate = f"{name}_{suffix}"
+        suffix += 1
+    used.add(candidate)
+    return candidate
+
+
 def standardize_categorical_values(
     df: pd.DataFrame,
     columns=None,
@@ -257,29 +291,24 @@ def standardize_categorical_values(
                    average. Columns are left as plain text if no valid
                    target_column is given.
     """
-    target_cols = _text_columns(df, columns)
+    target_cols = encodable_columns(df, method, target_column, max_categories, columns)
     new_columns = []
+    used = set(df.columns)
 
     if method == "mean":
-        if not target_column or target_column not in df.columns:
-            # Without a target column there is nothing to average against,
-            # so we do nothing rather than guess.
-            return df, new_columns
         for col in target_cols:
-            if col == target_column:
-                continue
             # For every row, look up the average of `target_column` among
             # all rows sharing that same category.
-            df[f"{col}_mean_encoded"] = df.groupby(col)[target_column].transform("mean")
-            new_columns.append(f"{col}_mean_encoded")
+            name = _available_column_name(f"{col}_mean_encoded", used)
+            df[name] = df.groupby(col)[target_column].transform("mean")
+            new_columns.append(name)
             df = df.drop(columns=[col])  # replace the original text column
         return df, new_columns
 
     # Default: one-hot encoding.
     for col in target_cols:
-        if df[col].nunique(dropna=True) > max_categories:
-            continue  # too many categories - skip to avoid creating hundreds of columns
         dummy_columns = pd.get_dummies(df[col], prefix=col)
+        dummy_columns.columns = [_available_column_name(name, used) for name in dummy_columns.columns]
         df = pd.concat([df, dummy_columns], axis=1)
         df = df.drop(columns=[col])  # replace the original text column
         new_columns.extend(dummy_columns.columns.tolist())
@@ -291,6 +320,15 @@ def standardize_categorical_values(
 # 9. Remove extra spaces
 # ---------------------------------------------------------------------------
 
+def _trimmed_values(column: pd.Series) -> tuple[pd.Series, pd.Series]:
+    cleaned = column.astype(str).str.strip().str.replace(r"\s+", " ", regex=True)
+    return cleaned, column.notna() & (cleaned != column)
+
+
+def count_extra_space_values(df: pd.DataFrame) -> int:
+    return sum(int(_trimmed_values(df[col])[1].sum()) for col in _text_columns(df))
+
+
 def remove_extra_spaces(df: pd.DataFrame, columns=None) -> tuple:
     """
     Trim leading/trailing spaces and collapse repeated inner spaces (e.g.
@@ -298,8 +336,7 @@ def remove_extra_spaces(df: pd.DataFrame, columns=None) -> tuple:
     """
     changed = {}
     for col in _text_columns(df, columns):
-        cleaned = df[col].astype(str).str.strip().str.replace(r"\s+", " ", regex=True)
-        mask = df[col].notna() & (cleaned != df[col])
+        cleaned, mask = _trimmed_values(df[col])
         count = int(mask.sum())
         if count:
             # `.where(isna, cleaned)` keeps real NaNs as NaN and only swaps

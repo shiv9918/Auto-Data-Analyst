@@ -1,7 +1,5 @@
 # Visualization tools for creating charts and graphs
 # Uses matplotlib and seaborn to generate data visualizations
-import os
-
 import matplotlib
 
 matplotlib.use("Agg", force=True)  # Use Agg backend to save charts without display
@@ -11,15 +9,17 @@ import seaborn as sns
 import pandas as pd
 import numpy as np
 
+from backend.analysis_artifacts import artifact_subdirectory
+
 # Create folder to save chart images
 OUTPUT_DIR = "outputs/charts/"
-os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 
 # Helper function to save chart to file
 def save_chart(filename: str):
     # Create full path and save the chart
-    path = os.path.join(OUTPUT_DIR, filename)
+    directory = artifact_subdirectory(OUTPUT_DIR)
+    path = str(directory / filename.replace("/", "_").replace("\\", "_"))
     plt.tight_layout()
     plt.savefig(path, dpi=150, bbox_inches="tight")
     plt.close()  # Close the figure to free memory

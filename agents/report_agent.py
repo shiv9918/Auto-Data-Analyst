@@ -3,9 +3,10 @@ import os
 from fpdf import FPDF
 from matplotlib import font_manager
 
+from backend.analysis_artifacts import artifact_subdirectory
+
 # Create folder for saved reports
 OUTPUT_DIR = "outputs/reports/"
-os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 
 # Custom PDF class to format the report nicely
@@ -86,7 +87,7 @@ def run_report_agent(
     pdf.add_section("4. Business Insights", insights)
 
     # Save PDF file
-    report_path = os.path.join(OUTPUT_DIR, filename)
+    report_path = str(artifact_subdirectory(OUTPUT_DIR) / filename)
     pdf.output(report_path)
 
     # Also save as Markdown file for easy reading

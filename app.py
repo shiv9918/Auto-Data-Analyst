@@ -2,6 +2,7 @@
 # Users upload files here and see the analysis results
 import os
 import warnings
+from tempfile import TemporaryDirectory
 
 warnings.filterwarnings("ignore")
 
@@ -11,6 +12,7 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 from groq import BadRequestError
+from streamlit.logger import get_logger
 
 # Import backend functions for data processing
 from backend.query_engine import (
@@ -25,10 +27,10 @@ from backend.query_engine import (
 )
 # Import the main pipeline that runs all agents
 from main import run_pipeline
+from tools.pandas_tools import load_file
 
-# Create uploads folder if it doesn't exist
-UPLOAD_DIR = "uploads"
-os.makedirs(UPLOAD_DIR, exist_ok=True)
+# Use Streamlit's log configuration for cleaning audit events.
+get_logger("auto_data_analyst.cleaning")
 
 # Configure Streamlit page
 st.set_page_config(page_title="AI Data Analyst", page_icon="📊", layout="wide")
@@ -36,7 +38,7 @@ st.set_page_config(page_title="AI Data Analyst", page_icon="📊", layout="wide"
 
 # Function to read CSV or Excel files
 def load_dataframe(filepath: str) -> pd.DataFrame:
-    return pd.read_csv(filepath) if filepath.endswith(".csv") else pd.read_excel(filepath)
+    return load_file(filepath)
 
 
 # Make dataframes safe for Streamlit's Arrow serialization without changing analysis inputs.
@@ -314,6 +316,8 @@ st.caption("Upload your CSV or Excel file and let AI agents clean it, analyze it
 
 for key, default in {
     "last_uploaded_file": None,
+    "upload_workspace": None,
+    "upload_path": None,
     "analysis_results": None,
     "dashboard_df": None,
     "chat_messages": [],
@@ -326,17 +330,21 @@ qna_example = "Why did sales drop in March?"
 df = None
 
 if uploaded_file:
-    filepath = os.path.join(UPLOAD_DIR, uploaded_file.name)
-    with open(filepath, "wb") as f:
-        f.write(uploaded_file.getbuffer())
+    if st.session_state.last_uploaded_file != uploaded_file.file_id:
+        workspace = TemporaryDirectory(prefix="analyst-upload-")
+        filename = os.path.basename(uploaded_file.name.replace("\\", "/"))
+        filepath = os.path.join(workspace.name, filename)
+        with open(filepath, "wb") as f:
+            f.write(uploaded_file.getbuffer())
 
-    if st.session_state.last_uploaded_file != uploaded_file.name:
-        st.session_state.last_uploaded_file = uploaded_file.name
+        st.session_state.upload_workspace = workspace
+        st.session_state.upload_path = filepath
+        st.session_state.last_uploaded_file = uploaded_file.file_id
         st.session_state.analysis_results = None
         st.session_state.dashboard_df = None
-        print(f"Uploaded file: {uploaded_file.name}")
         st.success(f"File uploaded: {uploaded_file.name}")
 
+    filepath = st.session_state.upload_path
     try:
         df = load_dataframe(filepath)
     except Exception as err:
@@ -388,9 +396,12 @@ if uploaded_file:
                     status.update(label="Analysis complete!", state="complete")
                 st.session_state.analysis_results = results
                 cleaned_path = results.get("cleaned_data_path")
-                st.session_state.dashboard_df = (
-                    pd.read_csv(cleaned_path) if cleaned_path and os.path.exists(cleaned_path) else df.copy()
-                )
+                try:
+                    st.session_state.dashboard_df = (
+                        pd.read_csv(cleaned_path) if cleaned_path and os.path.exists(cleaned_path) else df.copy()
+                    )
+                except pd.errors.EmptyDataError:
+                    st.session_state.dashboard_df = pd.DataFrame()
                 st.success("Analysis complete!")
             except Exception as err:
                 st.error(rate_limit_message(err) or f"Analysis failed: {err}")
